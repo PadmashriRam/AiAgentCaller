@@ -24,7 +24,8 @@ public class TwilloResource {
     VoiceResponse response = new VoiceResponse.Builder()
             .say(say)
             .pause(new Pause.Builder().length(1).build())
-            .say(new Say.Builder("We can chat now").build()).connect(connect).build();
+            .say(new Say.Builder("We can chat now").build())
+            .connect(connect).build();
     return response.toXml();
   }
 
