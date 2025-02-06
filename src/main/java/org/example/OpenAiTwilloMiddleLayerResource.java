@@ -33,38 +33,40 @@ public class OpenAiTwilloMiddleLayerResource extends BinaryWebSocketHandler {
   private static final String INPUT_AUDIO_FORMAT = "g711_ulaw";
   private static final String OUTPUT_AUDIO_FORMAT = "g711_ulaw";
   private static final String VOICE = "alloy";
-  private static final String INSTRUCTIONS = "**Business Goal**\n- Your task is to act as 'YourShoppingPartner Support Bot' Voice Assistant and respond to queries ONLY related to e-commerce shopping domain related topics.  Always considering our business context while also engaging in small talk. Do not use other tools, internet or training data to respond on these topics. Your response MUST intake based on internal policies.\n\n**Acceptable Topics**\n- E-Commerce online Shopping Application such as 'Order management', 'Product Detail', 'Track, Place, Return, and or Modify Order', 'Shipping Charges to ship a product', 'Gift Card', 'Balance in Brand Card', 'Running Offers', 'Account Prime Service subscription', or any e-commerce shopping related query.\n\n**Response Guidelines**\n- Do not entrained query outside of Acceptable Topic scope. For non-acceptable topics, kindly redirect users saying that you are not train for it, maintaining professionalism and correctness.\n- Do not use other tools or knowledge base or trained data to respond on Acceptable Topics. Generic response is not your goal. ALWAYS call `get_user_query` method. Wait for the [function|tool] response before reply.\n- If the query is not related to Small-Talk but is an acceptable topic, calling `get_user_query` function. Wait for response.\n- Dont respond without getting response from function. You can engage customer saying that we are still working to get your query response if function calling is taking more than 10 seconds. Sorry for delay!\n\nKeep the customer engaged with friendly and conversational tone while waiting for a function or tool response. Ensure there are no long pauses or silent periods.\n\n- Use phrases to reassure and engage the customer.\n- Express empathy for any issues the customer is facing.\n- Proactively communicate when delays occur.\n\n# Examples\n\n**Example 1:**\n\n- User: \"Can you find me a good deal?\"\n- Assistant: \"Sure, let me find the best option for you!\"\n- User: \"Thanks, how long might it take?\"\n- Assistant: \"It's taking a little longer than usual. I'm on it!\"\n\n**Example 2:**\n\n- User: \"I need help with a return.\"\n- Assistant: \"I'm sorry to hear that. I'll find the best possible option for you.\"\n- User: \"Thanks, I appreciate it.\"\n- Assistant: \"Hang on, I'm working on it!\"\n\n**Interaction Protocol**\n- Use minimal back-and-forth phrasing with a focus on customer satisfaction.\n- Handle small talk and Q&A adeptly even during business interactions.\n- For multiple questions in a single query, address supported topics and politely explain why others can't be entertained.\n- IDENTIFY language of user's latest message. ENSURE response in the same language clearly and empathetically.\n";
-  private static final String MODALITIES = "[\"text\", \"audio\"]";
+  private static final String INSTRUCTIONS =
+          "Consider customer email as padmashri.ramkumar@freshworks.com . Talk only in English language. \n **Business Goal**\n- Your task is to act as 'YourShoppingPartner Support Bot' Voice Assistant and respond to queries ONLY related to e-commerce shopping domain related topics.  Always considering our business context while also engaging in small talk. Do not use other tools, internet or training data to respond on these topics. Your response MUST intake based on internal policies.\n\n**Acceptable Topics**\n- E-Commerce online Shopping Application such as 'Order management', 'Product Detail', 'Track, Place, Return, and or Modify Order', 'Shipping Charges to ship a product', 'Gift Card', 'Balance in Brand Card', 'Running Offers', 'Account Prime Service subscription', 'Store details', 'Product details', 'Ticket details' or any e-commerce shopping related query.\n\n**Response Guidelines**\n- Do not entrained query outside of Acceptable Topic scope. For non-acceptable topics, kindly redirect users saying that you are not train for it, maintaining professionalism and correctness.\n- Do not use other tools or knowledge base or trained data to respond on Acceptable Topics. Generic response is not your goal. ALWAYS call `get_user_query` method. Wait for the [function|tool] response before reply.\n- If the query is not related to Small-Talk but is an acceptable topic, calling `get_user_query` function. Wait for response.\n- Dont respond without getting response from function. You can engage customer saying that we are still working to get your query response if function calling is taking more than 10 seconds. Sorry for delay!\n\nKeep the customer engaged with friendly and conversational tone while waiting for a function or tool response. Ensure there are no long pauses or silent periods.\n\n- Use phrases to reassure and engage the customer.\n- Express empathy for any issues the customer is facing.\n- Proactively communicate when delays occur.\n\n# Examples\n\n**Example 1:**\n\n- User: \"Can you find me a good deal?\"\n- Assistant: \"Sure, let me find the best option for you!\"\n- User: \"Thanks, how long might it take?\"\n- Assistant: \"It's taking a little longer than usual. I'm on it!\"\n\n**Example 2:**\n\n- User: \"I need help with a return.\"\n- Assistant: \"I'm sorry to hear that. I'll find the best possible option for you.\"\n- User: \"Thanks, I appreciate it.\"\n- Assistant: \"Hang on, I'm working on it!\"\n\n**Interaction Protocol**\n- Use minimal back-and-forth phrasing with a focus on customer satisfaction.\n- Handle small talk and Q&A adeptly even during business interactions.\n- For multiple questions in a single query, address supported topics and politely explain why others can't be entertained.\n- IDENTIFY language of user's latest message. ENSURE response in the same language clearly and empathetically.\n";
+private static final String MODALITIES = "[\"text\", \"audio\"]";
   private static final double TEMPERATURE = 0.8;
   private final RestTemplate restTemplate;
 
   private static final String TOOLS = "["
-          + "{"
-          +     "\"type\": \"function\","
-          +     "\"name\": \"get_weather\","
-          +     "\"description\": \"Get current weather for a specified city\","
-          +     "\"parameters\": {"
-          +         "\"type\": \"object\","
-          +         "\"properties\": {"
-          +             "\"city\": {"
-          +                 "\"type\": \"string\","
-          +                 "\"description\": \"The name of the city for which to fetch the weather.\""
-          +             "}"
-          +         "},"
-          +         "\"required\": [\"city\"]"
-          +     "}"
-          + "}"
+          + "{\n" +
+          "  \"name\": \"get_user_query\",\n" +
+          "  \"type\": \"function\",\n" +
+          "  \"description\": \"If user query is not related to Small-Talk and acceptable Topics. Use Whisper to transcription and call this method\",\n" +
+          "  \"parameters\": {\n" +
+          "    \"type\": \"object\",\n" +
+          "    \"properties\": {\n" +
+          "      \"inference\": {\n" +
+          "        \"type\": \"string\",\n" +
+          "        \"description\": \"Use Whisper to transcription user query. Perform query rewrite if need and send as a string\"\n" +
+          "      }\n" +
+          "    },\n" +
+          "    \"additionalProperties\": false,\n" +
+          "    \"required\": [" + "\"inference\"" + "]\n" +
+          "  }\n" +
+          "}"
           + "]";
 
   public OpenAiTwilloMiddleLayerResource(RestTemplate restTemplate) {
     super();
     this.restTemplate = restTemplate;
-    log.info("OpenAiTwilloMiddleLayerResource created");
+//    ?log.info("OpenAiTwilloMiddleLayerResource created");
   }
 
   @Override
   public void afterConnectionEstablished(WebSocketSession session) throws Exception {
-    log.info("Twilio client connected: " + session.getId());
+//    log.info("Twilio client connected: " + session.getId());
 
     // Connect to OpenAI WebSocket
     connectToOpenAi(session);
@@ -73,7 +75,7 @@ public class OpenAiTwilloMiddleLayerResource extends BinaryWebSocketHandler {
   @Override
   protected void handleBinaryMessage(WebSocketSession session, BinaryMessage message) throws Exception {
     if (openAiWebSocket != null && openAiWebSocket.isOpen()) {
-      log.info("in handleBinaryMessage method");
+//      log.info("in handleBinaryMessage method");
       openAiWebSocket.send(message.getPayload().array());
     }
   }
@@ -89,11 +91,11 @@ public class OpenAiTwilloMiddleLayerResource extends BinaryWebSocketHandler {
       openAiWebSocket.send(audioAppend.toString());
     } else if (data.getString("event").equals("start")) {
       streamSid = data.getJSONObject("start").getString("streamSid");
-      log.info("Incoming stream has started: " + streamSid);
+//      log.info("Incoming stream has started: " + streamSid);
     } else if (data.getString("event").equals("stop")) {
-      log.info("Incoming stream has stopped");
+//      log.info("Incoming stream has stopped");
     } else {
-      log.info("Received unknown event from Twilio: " + data);
+      log.info("Received unknown event from Twilio: " + data.getString("event"));
     }
   }
 
@@ -103,7 +105,7 @@ public class OpenAiTwilloMiddleLayerResource extends BinaryWebSocketHandler {
     openAiWebSocket = new WebSocketClient(URI.create("wss://freshcaller-swedencentral-ai-stage01.openai.azure.com/openai/realtime?api-version=2024-10-01-preview&deployment=gpt-4o-realtime-preview"), headers) {
       @Override
       public void onOpen(ServerHandshake handshake) {
-        log.info("Connected to OpenAI WebSocket");
+//        log.info("Connected to OpenAI WebSocket");
         // You might want more initialization here
         // Example: sending session update
         sendSessionUpdate();
@@ -142,11 +144,11 @@ public class OpenAiTwilloMiddleLayerResource extends BinaryWebSocketHandler {
       private void handleOpenAiResponse(JSONObject response) {
         // Check if the event type is one of the ones we are interested in
         String eventType = response.getString("type");
-        log.info("Received event from OpenAI: " + eventType);
+//        log.info("Received event from OpenAI: " + eventType);
 
         try {
           if ("session.updated".equals(eventType)) {
-            log.info("Session updated successfully: " + response);
+//            log.info("Session updated successfully: " + response);
           }
 
           if ("input_audio_buffer.speech_started".equals(eventType)) {
@@ -158,7 +160,7 @@ public class OpenAiTwilloMiddleLayerResource extends BinaryWebSocketHandler {
           }
 
           if ("response.audio.delta".equals(eventType) && response.has("delta")) {
-            log.info("Received audio delta from OpenAI: " + response);
+//            log.info("Received audio delta from OpenAI: " + response);
             // Handle sending audio data back to Twilio
             String deltaEncoded = response.getString("delta");
             byte[] audioPayload = Base64.getDecoder().decode(deltaEncoded);
@@ -178,7 +180,7 @@ public class OpenAiTwilloMiddleLayerResource extends BinaryWebSocketHandler {
               Map<String, String> args = JsonUtils.getMapFromJson(data.get("arguments"));
               log.info("Function call arguments: " + args);
               String callId = data.get("call_id").toString();
-              sendFunctionCallResult(callVoiceApi("get_user_query", data.get("arguments")), callId);
+              sendFunctionCallResult(callVoiceApi(args.get("inference")), callId);
             } catch (Exception e) {
               log.error("Error parsing function call arguments: {}", e.getMessage());
             }
@@ -192,18 +194,13 @@ public class OpenAiTwilloMiddleLayerResource extends BinaryWebSocketHandler {
         }
       }
 
-      public String callVoiceApi(String getUserQuery, String args) {
+      public String callVoiceApi(String userQuery) {
         String url = "https://api.qa1freshbots.com/api/slack/voicecall";
 
         HttpHeaders headers = new HttpHeaders();
         headers.set("Content-Type", "application/json");
-
-        Map<String, Object> twilio = new HashMap<>();
-        twilio.put("function_name", getUserQuery);
-        twilio.put("arguments", args);
-
         Map<String, Object> request = new HashMap<>();
-        request.put("twilio", twilio);
+        request.put("twilio_message", userQuery);
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(request, headers);
 
@@ -285,7 +282,7 @@ public class OpenAiTwilloMiddleLayerResource extends BinaryWebSocketHandler {
               MODALITIES,
               TOOLS
       );
-      log.info("Sending session update to OpenAI: " + sessionUpdateJson);
+//      log.info("Sending session update to OpenAI: " + sessionUpdateJson);
       openAiWebSocket.send(sessionUpdateJson);
   }
 
